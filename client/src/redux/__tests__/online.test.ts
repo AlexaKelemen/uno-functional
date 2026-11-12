@@ -41,6 +41,41 @@ describe('session', () => {
   })
 })
 
+describe('server pushes', () => {
+  it('shows lobby changes pushed by the server', async () => {
+    const server = fakeGameServer()
+    const store = await loggedInStore('Ann', server)
+    server.pushPendingGames([pendingGame()])
+    await flush()
+    expect(store.getState().lobby.pendingGames.map((g) => g.id)).toEqual(['g1'])
+  })
+
+  it("shows opponents' moves pushed by the server", async () => {
+    const server = fakeGameServer()
+    const store = await loggedInStore('Ann', server)
+    server.pushGame(onlineGame({ playerInTurn: 1 }))
+    expect(store.getState().onlineGames.games.g1?.playerInTurn).toBe(1)
+  })
+
+  it('stops listening after logout', async () => {
+    const server = fakeGameServer()
+    const store = await loggedInStore('Ann', server)
+    store.dispatch(logout())
+    server.pushGame(onlineGame())
+    expect(store.getState().onlineGames.games).toEqual({})
+  })
+
+  it('listens only once after logging in again', async () => {
+    const server = fakeGameServer()
+    const store = await loggedInStore('Ann', server)
+    store.dispatch(login('Ann'))
+    let updates = 0
+    store.subscribe(() => updates++)
+    server.pushGame(onlineGame())
+    expect(updates).toBe(1)
+  })
+})
+
 describe('lobby', () => {
   it('waits in a game it created', async () => {
     const server = fakeGameServer({ createGame: async () => pendingGame({ numberOfPlayers: 3 }) })

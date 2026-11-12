@@ -3,7 +3,9 @@
 // player and survives a reload.
 import type { AppThunk } from '../store'
 import { loggedIn, loggedOut } from '../slices/sessionSlice'
-import { refreshPendingGames } from './lobby'
+import { gameReceived } from '../slices/onlineGamesSlice'
+import { gameUpdates$, pendingGames$ } from '../../api/serverPushes'
+import { receivePendingGames, refreshPendingGames } from './lobby'
 
 const nameKey = 'uno.playerName'
 
@@ -31,15 +33,15 @@ export const login =
   (dispatch, _getState, connection) => {
     const trimmed = name.trim()
     if (trimmed === '') return
-    connection.open(trimmed)
+    const server = connection.open(trimmed)
     storeName(trimmed)
     dispatch(loggedIn(trimmed))
+    // Listen to the server, so lobby changes and opponents' moves show up.
+    // Ends when the connection closes (logout or a new login).
+    const subscription = pendingGames$(server).subscribe((games) => void dispatch(receivePendingGames(games)))
+    subscription.add(gameUpdates$(server).subscribe((game) => dispatch(gameReceived(game))))
+    connection.listen(subscription)
     void dispatch(refreshPendingGames())
-    // TODO (RxJS part): nothing listens to the server's pushes yet, so opponents'
-    // moves and lobby changes won't show up until then. After login, subscribe
-    // to server.onPendingGames -> receivePendingGames(...) and
-    // server.onGameUpdated -> gameReceived(...), and unsubscribe on logout.
-    // See client/README.md.
   }
 
 export const logout = (): AppThunk => (dispatch, _getState, connection) => {

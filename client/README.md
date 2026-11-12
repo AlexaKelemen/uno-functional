@@ -35,16 +35,11 @@ Everything is in `src/redux`.
 
 The `GameServer` (from the assignment 3 client, `src/api/gameServer.ts`) is a live object, so it is kept outside the state in `src/api/connection.ts`. Thunks get it as their third argument: `(dispatch, getState, connection) => ...`.
 
-## RxJS (todo, needed before online play works)
+## RxJS
 
-Turn the server's pushes into Observables and dispatch into Redux:
+The server pushes are Observables in `src/api/serverPushes.ts` (`pendingGames$`, `gameUpdates$`). `login` subscribes to them and dispatches `receivePendingGames` / `gameReceived`. The subscription ends on logout or a new login.
 
-- `server.onPendingGames` → `dispatch(receivePendingGames(games))`
-- `server.onGameUpdated` → `dispatch(gameReceived(game))` (from `onlineGamesSlice`)
-
-Get the server with a thunk: `store.dispatch((dispatch, _get, connection) => connection.require())`, and subscribe after `login`.
-
-The bot runner (`client/src/game/botRunner.ts` in UNO_game) still needs porting too. It can dispatch `played`, `drew`, `accused` and `botsThinkingChanged`, and read `selectLocalViewFor(state, seat)`.
+Still todo: the bot runner (`client/src/game/botRunner.ts` in UNO_game) still needs porting too. It can dispatch `played`, `drew`, `accused` and `botsThinkingChanged`, and read `selectLocalViewFor(state, seat)`.
 
 ## React (todo)
 
