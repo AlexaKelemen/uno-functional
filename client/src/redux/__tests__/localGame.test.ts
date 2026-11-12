@@ -12,7 +12,7 @@ import {
   started,
   type LocalGameState,
 } from '../slices/localGameSlice'
-import { selectLocalView, selectLocalWinner } from '../selectors'
+import { selectLocalView, selectLocalViewFor, selectLocalWinner } from '../selectors'
 
 const reducer = localGameSlice.reducer
 
@@ -157,5 +157,21 @@ describe('local game through the store', () => {
     expect(view.topCard).toEqual(store.getState().localGame.round!.discardPile[0])
     // Memoized: same state gives the same object
     expect(selectLocalView(store.getState())).toBe(view)
+  })
+
+  it('memoizes the view for every seat', () => {
+    const store = makeStore()
+    store.dispatch(startWith(5))
+    const state = store.getState()
+    const bot1 = selectLocalViewFor(state, 1)!
+    const bot2 = selectLocalViewFor(state, 2)!
+    expect(bot1.playerIndex).toBe(1)
+    expect(bot2.playerIndex).toBe(2)
+    // Asking for another seat in between doesn't break the cache
+    expect(selectLocalViewFor(state, 1)).toBe(bot1)
+    expect(selectLocalViewFor(state, 2)).toBe(bot2)
+    // A new round gives a new view
+    store.dispatch(drew(store.getState().localGame.round!.playerInTurn!))
+    expect(selectLocalViewFor(store.getState(), 1)).not.toBe(bot1)
   })
 })

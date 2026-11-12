@@ -35,7 +35,7 @@ Everything is in `src/redux`.
 
 The `GameServer` (from the assignment 3 client, `src/api/gameServer.ts`) is a live object, so it is kept outside the state in `src/api/connection.ts`. Thunks get it as their third argument: `(dispatch, getState, connection) => ...`.
 
-## RxJS (todo)
+## RxJS (todo, needed before online play works)
 
 Turn the server's pushes into Observables and dispatch into Redux:
 

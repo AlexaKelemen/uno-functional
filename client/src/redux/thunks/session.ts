@@ -35,6 +35,11 @@ export const login =
     storeName(trimmed)
     dispatch(loggedIn(trimmed))
     void dispatch(refreshPendingGames())
+    // TODO (RxJS part): nothing listens to the server's pushes yet, so opponents'
+    // moves and lobby changes won't show up until then. After login, subscribe
+    // to server.onPendingGames -> receivePendingGames(...) and
+    // server.onGameUpdated -> gameReceived(...), and unsubscribe on logout.
+    // See client/README.md.
   }
 
 export const logout = (): AppThunk => (dispatch, _getState, connection) => {

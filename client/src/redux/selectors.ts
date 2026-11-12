@@ -66,9 +66,13 @@ export const selectLocalView = createSelector([selectLocalRound], (round) =>
   round === undefined ? undefined : roundView(round, HUMAN),
 )
 
-// Same view for any seat - the bots use this
-export const selectLocalViewFor = (state: RootState, playerIndex: number) =>
-  state.localGame.round && roundView(state.localGame.round, playerIndex)
+// Same view for any seat - the bots use this. Memoized per round and seat
+// (createSelector caches every argument combination), so it is safe to use
+// in useAppSelector too.
+export const selectLocalViewFor = createSelector(
+  [selectLocalRound, (_state: RootState, playerIndex: number) => playerIndex],
+  (round, playerIndex) => (round === undefined ? undefined : roundView(round, playerIndex)),
+)
 
 export const selectLocalWinner = (state: RootState) =>
   state.localGame.round && Round.winner(state.localGame.round as Round.Round)
