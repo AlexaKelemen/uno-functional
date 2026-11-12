@@ -148,6 +148,7 @@ module.exports = {
 
   // An array of regexp pattern strings that are matched against all test paths, matched tests are skipped
   testPathIgnorePatterns: [
+     "/client/", // the client has its own tests (vitest)
      "\\\\node_modules\\\\",
      "\\\\dist\\\\",
      "\\\\XX__test__\\\\",
