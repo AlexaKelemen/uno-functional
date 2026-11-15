@@ -1,8 +1,8 @@
 // Pure decision logic for a bot. No worker APIs here, so it's easy to unit test.
 // The bot only ever sees a PlayerView: its own hand plus public information.
-import { CARD_COLORS, type Card, type CardColor } from '@domain/model/card'
-import { canCardBePlayed } from '@domain/model/rules'
-import type { BotAction, PlayerView } from '@/shared/gameTypes'
+import { colors as CARD_COLORS, type Card, type Color as CardColor } from '@model/deck'
+import { canPlayCard } from '@model/round'
+import type { BotAction, PlayerView } from './botMessages'
 
 export type Random = () => number
 
@@ -15,7 +15,9 @@ export const defaultPersonality: BotPersonality = { forgetUnoChance: 0.25, catch
 
 // Same rule check the engine uses, so the bot never picks an illegal card.
 export function legalPlays(view: PlayerView): number[] {
-  return view.hand.flatMap((card, i) => (canCardBePlayed(card, view) ? [i] : []))
+  return view.hand.flatMap((card, i) =>
+    canPlayCard(card, view.hand, view.topCard, view.currentColor) ? [i] : [],
+  )
 }
 
 // Prefer cards that hurt the next player; save wilds for when nothing else works.

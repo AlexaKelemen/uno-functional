@@ -1,15 +1,7 @@
-import type { CardColor } from '@domain/model/card'
-import type { PlayContext } from '@domain/model/rules'
-import type { PlayDirection } from '@domain/model/turnOrder'
+import type { Color as CardColor } from '@model/deck'
+import type { PlayerView } from '@/redux/selectors'
 
-export type PlayerView = PlayContext & {
-  readonly playerIndex: number
-  readonly playerNames: readonly string[]
-  readonly handSizes: readonly number[]
-  readonly playerInTurn: number | undefined
-  readonly direction: PlayDirection
-  readonly drawPileSize: number
-}
+export type { PlayerView }
 
 export type BotRequest =
   | { readonly type: 'chooseAction'; readonly requestId: number; readonly view: PlayerView }

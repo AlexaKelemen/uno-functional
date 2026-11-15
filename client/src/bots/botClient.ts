@@ -1,6 +1,6 @@
 // Main-thread side of a bot. Wraps the worker's callback-style messages in Promises,
 // matching each response to its request by requestId.
-import type { BotAction, BotRequest, BotResponse, PlayerView } from '@/shared/gameTypes'
+import type { BotAction, BotRequest, BotResponse, PlayerView } from './botMessages'
 
 export interface Bot {
   chooseAction(view: PlayerView): Promise<BotAction>

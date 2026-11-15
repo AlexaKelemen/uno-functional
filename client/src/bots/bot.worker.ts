@@ -1,7 +1,7 @@
 // A bot runs in its own Web Worker and communicates ONLY through postMessage/onmessage.
 // The messages are plain data (see shared/gameTypes.ts), so the same protocol can
 // later travel over the network when the bots move to the server.
-import type { BotRequest, BotResponse } from '@/shared/gameTypes'
+import type { BotRequest, BotResponse } from './botMessages'
 import { chooseAction, considerUnoAccusation } from './botStrategy'
 
 function respond(request: BotRequest): BotResponse {

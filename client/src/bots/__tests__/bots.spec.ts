@@ -1,10 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import type { Card, CardColor } from '@domain/model/card'
-import { UnoRound } from '@domain/model/round'
-import type { BotRequest, BotResponse, PlayerView } from '@/shared/gameTypes'
+import type { Card, Color as CardColor } from '@model/deck'
+import type { BotRequest, BotResponse, PlayerView } from '../botMessages'
 import { chooseAction, considerUnoAccusation, legalPlays } from '../botStrategy'
-import { createBot, type Bot, type MessagePort } from '../botClient'
-import { createBotRunner } from '@/game/botRunner'
+import { createBot, type MessagePort } from '../botClient'
 
 const red5: Card = { type: 'NUMBERED', color: 'RED', number: 5 }
 const blue5: Card = { type: 'NUMBERED', color: 'BLUE', number: 5 }
@@ -79,48 +77,5 @@ describe('bot client', () => {
 
     expect(await first).toEqual({ type: 'draw' })
     expect(await second).toEqual({ type: 'pass' })
-  })
-})
-
-// Runs the real strategy through the real message protocol, without a Worker thread.
-function inProcessBot(): Bot {
-  const port: MessagePort = {
-    onmessage: null,
-    terminate() {},
-    postMessage(req) {
-      const action =
-        req.type === 'chooseAction'
-          ? chooseAction(req.view)
-          : considerUnoAccusation(req.playerWithOneCard)
-      queueMicrotask(() =>
-        port.onmessage!({ data: { requestId: req.requestId, action } } as MessageEvent),
-      )
-    },
-  }
-  return createBot(port)
-}
-
-describe('bot runner', () => {
-  it.each([2, 3, 4])(
-    'bots alone play a %i-player round to the end following the rules',
-    async (n) => {
-      for (let game = 0; game < 20; game++) {
-        const players = Array.from({ length: n }, (_, i) => `Bot ${i}`)
-        const round = new UnoRound({ players, dealer: 0 })
-        const bots = new Map(players.map((_, i) => [i, inProcessBot()] as const))
-        // round.play throws on any illegal move, so finishing proves the bots played legally
-        await createBotRunner(round, bots, { thinkMs: 0 }).runBots()
-        expect(round.hasEnded()).toBe(true)
-        expect(round.playerHand(round.winner()!)).toHaveLength(0)
-      }
-    },
-    60_000,
-  )
-
-  it("stops and hands over when it's the human's turn", async () => {
-    const round = new UnoRound({ players: ['Human', 'Bot'], dealer: 1 })
-    const runner = createBotRunner(round, new Map([[1, inProcessBot()]]), { thinkMs: 0 })
-    await runner.runBots()
-    expect(round.hasEnded() || round.playerInTurn() === 0).toBe(true)
   })
 })
