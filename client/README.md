@@ -6,7 +6,7 @@ React + Redux + RxJS client. It uses the functional model from assignment 4 (`..
     cd client; npm install
     npm test                    # Redux tests (vitest)
     npm run typecheck
-    npm run dev
+    npm run dev                 # needs the server: cd ../server; npm start
 
 ## Redux (done)
 
@@ -16,7 +16,7 @@ Everything is in `src/redux`.
 | --- | --- |
 | `store.ts` | `store`, `makeStore(connection)`, `RootState`, `AppDispatch`, `AppThunk` |
 | `hooks.ts` | `useAppDispatch`, `useAppSelector`: use these in components |
-| `selectors.ts` | Everything components read, incl. `PlayerView` for both game types |
+| `selectors.ts` | Everything components read, incl. `PlayerView` for both game types and `selectCanPlayCard(view, cardIndex)` |
 | `slices/sessionSlice.ts` | `playerName` |
 | `slices/lobbySlice.ts` | Pending games, the game we wait in, error |
 | `slices/onlineGamesSlice.ts` | Online games by id (the server is the referee), error |
@@ -24,6 +24,7 @@ Everything is in `src/redux`.
 | `thunks/session.ts` | `login`, `logout`, `restoreSession` |
 | `thunks/lobby.ts` | `refreshPendingGames`, `createGame`, `joinGame`, `leaveGame`, `startGameNow`, `receivePendingGames` |
 | `thunks/onlineGame.ts` | `loadGame`, `playOnline`, `drawOnline`, `sayUnoOnline`, `accuseOnline` |
+| `thunks/localGame.ts` | `startLocalGame`, `playLocal`, `drawLocal`, `accuseLocal`, `endLocalGame`, `runBots` |
 
 ### How the functional model is used
 
@@ -37,10 +38,34 @@ The `GameServer` (from the assignment 3 client, `src/api/gameServer.ts`) is a li
 
 ## RxJS
 
-The server pushes are Observables in `src/api/serverPushes.ts` (`pendingGames$`, `gameUpdates$`). `login` subscribes to them and dispatches `receivePendingGames` / `gameReceived`. The subscription ends on logout or a new login.
+The server pushes are Observables in `src/api/serverPushes.ts` (`pendingGames$`, `gameUpdates$`). `login` turns them into actions the same way as the lecturer's yahtzee-functional client:
 
-Still todo: the bot runner (`client/src/game/botRunner.ts` in UNO_game) still needs porting too. It can dispatch `played`, `drew`, `accused` and `botsThinkingChanged`, and read `selectLocalViewFor(state, seat)`.
+    pendingGames$(server).pipe(map(receivePendingGames)).subscribe(dispatch)
+    gameUpdates$(server).pipe(map(gameReceived)).subscribe(dispatch)
+
+The subscription ends on logout or a new login.
+
+## Bots (done)
+
+Each bot runs in its own Web Worker (`src/bots`). It only gets a `PlayerView` and answers with a `BotAction` (`src/bots/botMessages.ts`). Its strategy (`botStrategy.ts`) uses the model's `canPlayCard`.
+
+The bot runner is plain thunks in `src/redux/thunks/localGame.ts`:
+
+- `startLocalGame({ playerName, botCount })` deals a round, starts one bot per seat and lets them play until it is the human's turn.
+- `playLocal(cardIndex, color?, sayUno?)`, `drawLocal()`: the human's moves. The bots then get a chance to catch a missed UNO, and play their turns.
+- `accuseLocal(seat)` returns whether the accused had forgotten UNO.
+- `endLocalGame()` stops the bots.
+
+Each of these resolves when it is the human's turn again (or the round is over), so a component can simply dispatch it. `selectBotsThinking` is true while the bots play.
+
+While a bot is in turn the runner waits `thinkMs` (2 s), asks the bot, and dispatches `played` or `drew`. The model is the referee: anything it refuses becomes a draw. After a draw that keeps the turn, only the drawn card is played. The runner stops when `localGame.seed` changes or the round is gone, and the workers are terminated when the round is won, the game ends or a new one starts.
+
+For tests, `createLocalGameThunks({ createBot, thinkMs, random })` makes the same thunks with other bots (see `src/redux/__tests__/fakeBots.ts`).
 
 ## React (todo)
 
 Port the views and components from the Vue client. Read with `useAppSelector(selectX)` and act with `useAppDispatch()(thunkOrAction)`. `App.tsx` is only a placeholder.
+
+- A game against bots: `selectLocalView`, `selectIsHumansTurn`, `selectBotsThinking`, `selectLocalWinner`, `selectLastAccusation`, `selectLocalError`, and the thunks above. To say UNO without playing, dispatch `saidUno(HUMAN)`.
+- An online game: `selectOnlineView(state, id)`, `selectOnlineWinner`, `selectOnlineError` and `thunks/onlineGame.ts`.
+- Either game: `selectCanPlayCard(view, cardIndex)` to grey out cards.
