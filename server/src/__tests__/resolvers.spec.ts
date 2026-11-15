@@ -113,7 +113,7 @@ describe('resolvers', () => {
       'mutation { playCard(id: "0", cardIndex: 1, sayUno: false) { id } }',
     )
     expect(result.errors?.[0]?.extensions?.code).toBe('Illegal Move')
-    expect(result.errors?.[0]?.message).toBe('A wild card needs a colour')
+    expect(result.errors?.[0]?.message).toBe('A wild card needs a color')
   })
 
   it('lets a player say UNO and catch an UNO failure', async () => {

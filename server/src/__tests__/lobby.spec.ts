@@ -58,7 +58,7 @@ describe('lobby', () => {
     expect(joined?.pending).toBe(false)
     expect(await model.pendingGames()).toEqual([])
     const started = await valueOf(await model.findGame('g1'))
-    expect(started?.round.player(1)).toBe('Ben')
+    expect(started?.round.players[1]).toBe('Ben')
   })
 
   it('reports joining an unknown game', async () => {

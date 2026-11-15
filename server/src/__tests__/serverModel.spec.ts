@@ -2,17 +2,27 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { MemoryStore } from '../memoryStore.js'
 import type { ServerResponse } from '../response.js'
 import { seededGame } from '../seededGame.js'
+import { winner, type Round } from '@domain/model/round.js'
 import { ServerModel, type ActiveGame, type ServerError } from '../serverModel.js'
 
 const alwaysFirstSeat = () => 0
 
-let game: ActiveGame
 let model: ServerModel
 
 beforeEach(() => {
-  game = seededGame()
-  model = new ServerModel(new MemoryStore(game), alwaysFirstSeat)
+  model = new ServerModel(new MemoryStore(seededGame()), alwaysFirstSeat)
 })
+
+async function stored(id = '0'): Promise<Round> {
+  return (await model.findGame(id)).resolve({
+    onSuccess: async (game) => game.round,
+    onError: async (error) => {
+      throw new Error(`no game ${id}: ${error.type}`)
+    },
+  })
+}
+
+const handSize = async (seat: number) => (await stored()).hands[seat]!.length
 
 function errorOf(
   response: ServerResponse<ActiveGame, ServerError>,
@@ -27,16 +37,16 @@ describe('ServerModel', () => {
     expect(
       await errorOf(await model.playCard('0', 'Alice', { cardIndex: 0, ...noColour })),
     ).toBeUndefined()
-    expect(game.round.playerHand(0)).toHaveLength(1)
-    expect(game.round.playerInTurn()).toBe(1)
+    expect(await handSize(0)).toBe(1)
+    expect((await stored()).playerInTurn).toBe(1)
   })
 
   it('forbids playing out of turn and leaves the game unchanged', async () => {
     expect(await errorOf(await model.playCard('0', 'Bob', { cardIndex: 0, ...noColour }))).toEqual({
       type: 'Forbidden',
     })
-    expect(game.round.playerHand(1)).toHaveLength(3)
-    expect(game.round.playerInTurn()).toBe(0)
+    expect(await handSize(1)).toBe(3)
+    expect((await stored()).playerInTurn).toBe(0)
   })
 
   it('forbids players who are not in the game', async () => {
@@ -51,9 +61,9 @@ describe('ServerModel', () => {
       await errorOf(await model.playCard('0', 'Alice', { cardIndex: 1, ...noColour })),
     ).toEqual({
       type: 'Illegal Move',
-      reason: 'A wild card needs a colour',
+      reason: 'A wild card needs a color',
     })
-    expect(game.round.playerHand(0)).toHaveLength(2)
+    expect(await handSize(0)).toBe(2)
   })
 
   it('reports an unknown game', async () => {
@@ -66,8 +76,8 @@ describe('ServerModel', () => {
   it('lets the player in turn draw', async () => {
     await model.playCard('0', 'Alice', { cardIndex: 0, ...noColour })
     expect(await errorOf(await model.drawCard('0', 'Bob'))).toBeUndefined()
-    expect(game.round.playerHand(1)).toHaveLength(4)
-    expect(game.round.playerInTurn()).toBe(0)
+    expect(await handSize(1)).toBe(4)
+    expect((await stored()).playerInTurn).toBe(0)
   })
 
   it('lets any player say UNO, even out of turn', async () => {
@@ -77,20 +87,20 @@ describe('ServerModel', () => {
   it('lets any player accuse, and a caught player draws four', async () => {
     await model.playCard('0', 'Alice', { cardIndex: 0, ...noColour })
     expect(await errorOf(await model.catchUnoFailure('0', 'Bob', 0))).toBeUndefined()
-    expect(game.round.playerHand(0)).toHaveLength(5)
+    expect(await handSize(0)).toBe(5)
   })
 
   it('says UNO together with the play when asked to', async () => {
     await model.playCard('0', 'Alice', { cardIndex: 0, color: undefined, sayUno: true })
     await model.catchUnoFailure('0', 'Bob', 0)
-    expect(game.round.playerHand(0)).toHaveLength(1)
+    expect(await handSize(0)).toBe(1)
   })
 
   it('forbids play and draw once the round has ended', async () => {
     await model.playCard('0', 'Alice', { cardIndex: 0, ...noColour })
     await model.drawCard('0', 'Bob')
     await model.playCard('0', 'Alice', { cardIndex: 0, color: 'BLUE', sayUno: false })
-    expect(game.round.winner()).toBe(0)
+    expect(winner(await stored())).toBe(0)
 
     expect(await errorOf(await model.drawCard('0', 'Bob'))).toEqual({ type: 'Forbidden' })
     expect(
@@ -113,19 +123,14 @@ describe('ServerModel', () => {
     await model.playCard('0', 'Alice', { cardIndex: 1, color: undefined, sayUno: true })
     await model.playCard('0', 'Alice', { cardIndex: 0, ...noColour })
     await model.catchUnoFailure('0', 'Bob', 0)
-    expect(game.round.playerHand(0)).toHaveLength(5)
+    expect(await handSize(0)).toBe(5)
   })
 
   it('starts a game with the given players', async () => {
     await model.startGame('7', ['Ann', 'Ben', 'Cid'])
-    const started = await (
-      await model.findGame('7')
-    ).resolve({
-      onSuccess: async (found) => found,
-      onError: async () => undefined,
-    })
-    expect(started?.round.playerCount).toBe(3)
-    expect(started?.round.player(2)).toBe('Cid')
-    expect(started?.round.dealer).toBe(0)
+    const started = await stored('7')
+    expect(started.playerCount).toBe(3)
+    expect(started.players[2]).toBe('Cid')
+    expect(started.dealer).toBe(0)
   })
 })
