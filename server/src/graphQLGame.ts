@@ -1,4 +1,5 @@
-import type { Card, CardColor } from '@domain/model/card.js'
+import type { Card, Color } from '@domain/model/deck.js'
+import * as Round from '@domain/model/round.js'
 import { toGraphQLError } from './graphQLErrors.js'
 import type { ServerResponse } from './response.js'
 import type {
@@ -18,8 +19,8 @@ export type GraphQLActiveGame = {
   readonly hands: readonly (readonly Card[])[]
   readonly handSizes: readonly number[]
   readonly topCard: Card
-  readonly currentColor: CardColor
-  readonly direction: string
+  readonly currentColor: Color
+  readonly direction: PlayDirection
   readonly drawPileSize: number
   readonly winner: number | null
   readonly score: number | null
@@ -27,21 +28,25 @@ export type GraphQLActiveGame = {
 
 export type GraphQLGame = GraphQLActiveGame | PendingGame
 
+export type PlayDirection = 'clockwise' | 'counterclockwise'
+
+export const toPlayDirection = (direction: Round.Direction): PlayDirection =>
+  direction === 1 ? 'clockwise' : 'counterclockwise'
+
 export function toGraphQLGame({ id, round }: ActiveGame): GraphQLActiveGame {
-  const memento = round.toMemento()
   return {
     id,
     pending: false,
-    players: memento.players,
-    playerInTurn: round.playerInTurn() ?? null,
-    hands: memento.hands,
-    handSizes: memento.hands.map((hand) => hand.length),
-    topCard: round.topCard(),
+    players: round.players,
+    playerInTurn: round.playerInTurn ?? null,
+    hands: round.hands,
+    handSizes: round.hands.map((hand) => hand.length),
+    topCard: Round.topOfDiscard(round),
     currentColor: round.currentColor,
-    direction: memento.currentDirection,
-    drawPileSize: round.drawPile().size,
-    winner: round.winner() ?? null,
-    score: round.score() ?? null,
+    direction: toPlayDirection(round.direction),
+    drawPileSize: round.drawPile.length,
+    winner: Round.winner(round) ?? null,
+    score: Round.score(round) ?? null,
   }
 }
 

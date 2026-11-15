@@ -1,13 +1,14 @@
-import type { CardColor } from '@domain/model/card.js'
-import { UnoRound, type Round } from '@domain/model/round.js'
+import type { Color } from '@domain/model/deck.js'
+import * as Round from '@domain/model/round.js'
 import type { Randomizer } from '@domain/utils/random_utils.js'
+import _ from 'lodash/fp.js'
 import { randomUUID } from 'node:crypto'
 import { ServerResponse } from './response.js'
 
 export type ActiveGame = {
   readonly id: string
   readonly pending: false
-  readonly round: Round
+  readonly round: Round.Round
 }
 
 export type PendingGame = {
@@ -52,35 +53,33 @@ export const maxPlayers = 4
 
 export type PlayMove = {
   readonly cardIndex: number
-  readonly color: CardColor | undefined
+  readonly color: Color | undefined
   readonly sayUno: boolean
 }
 
 type WhoMayAct = 'playerInTurn' | 'anyPlayer'
 
-type RoundAction = (round: Round, seat: number) => void
+type Transition = (round: Round.Round) => Round.Round
+
+type Move = (seat: number) => Transition
 
 const forbidden: ServerError = { type: 'Forbidden' }
 
 const conflict = (reason: string): ServerError => ({ type: 'Conflict', reason })
 
 function seatOfPlayer(game: ActiveGame, playerName: string): number {
-  const players = Array.from({ length: game.round.playerCount }, (_, seat) =>
-    game.round.player(seat),
-  )
-  return players.indexOf(playerName)
+  return game.round.players.indexOf(playerName)
 }
 
 function isAllowedToAct(game: ActiveGame, playerName: string, whoMayAct: WhoMayAct): boolean {
   const seat = seatOfPlayer(game, playerName)
-  if (seat === -1 || game.round.hasEnded()) return false
-  return whoMayAct === 'anyPlayer' || game.round.playerInTurn() === seat
+  if (seat === -1 || Round.hasEnded(game.round)) return false
+  return whoMayAct === 'anyPlayer' || game.round.playerInTurn === seat
 }
 
-function applyToRound(game: ActiveGame, seat: number, action: RoundAction): MoveResponse {
+function applyToRound(game: ActiveGame, transition: Transition): MoveResponse {
   try {
-    action(game.round, seat)
-    return ServerResponse.success(game)
+    return ServerResponse.success({ ...game, round: transition(game.round) })
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error)
     return ServerResponse.failure<ServerError>({ type: 'Illegal Move', reason })
@@ -103,7 +102,7 @@ export class ServerModel {
   }
 
   startGame(id: string, players: readonly string[]): Promise<StoreResponse> {
-    const round = new UnoRound({ players: [...players], dealer: this.randomizer(players.length) })
+    const round = Round.createRound(players, this.randomizer(players.length))
     return this.store.addGame({ id, pending: false, round })
   }
 
@@ -181,10 +180,10 @@ export class ServerModel {
     return added
   }
 
-  private dealRound(players: readonly string[]): ServerResponse<Round, ServerError> {
+  private dealRound(players: readonly string[]): ServerResponse<Round.Round, ServerError> {
     try {
       const dealer = this.randomizer(players.length)
-      return ServerResponse.success(new UnoRound({ players: [...players], dealer }))
+      return ServerResponse.success(Round.createRound(players, dealer))
     } catch (error) {
       const reason = error instanceof Error ? error.message : String(error)
       return ServerResponse.failure(conflict(`Could not start the game: ${reason}`))
@@ -205,35 +204,32 @@ export class ServerModel {
     playerName: string,
     { cardIndex, color, sayUno }: PlayMove,
   ): Promise<MoveResponse> {
-    return this.applyPlayerAction(id, playerName, 'playerInTurn', (round, seat) => {
-      round.play(cardIndex, color)
-      if (sayUno && !round.hasEnded()) round.sayUno(seat)
-    })
+    return this.applyPlayerAction(id, playerName, 'playerInTurn', (seat) =>
+      sayUno
+        ? _.flow([Round.sayUno(seat), Round.play(cardIndex, color)])
+        : Round.play(cardIndex, color),
+    )
   }
 
   drawCard(id: string, playerName: string): Promise<MoveResponse> {
-    return this.applyPlayerAction(id, playerName, 'playerInTurn', (round) => {
-      round.draw()
-    })
+    return this.applyPlayerAction(id, playerName, 'playerInTurn', () => Round.draw)
   }
 
   sayUno(id: string, playerName: string): Promise<MoveResponse> {
-    return this.applyPlayerAction(id, playerName, 'anyPlayer', (round, seat) => {
-      round.sayUno(seat)
-    })
+    return this.applyPlayerAction(id, playerName, 'anyPlayer', (seat) => Round.sayUno(seat))
   }
 
   catchUnoFailure(id: string, playerName: string, accused: number): Promise<MoveResponse> {
-    return this.applyPlayerAction(id, playerName, 'anyPlayer', (round, seat) => {
-      round.catchUnoFailure({ accuser: seat, accused })
-    })
+    return this.applyPlayerAction(id, playerName, 'anyPlayer', (seat) =>
+      Round.catchUnoFailure({ accuser: seat, accused }),
+    )
   }
 
   private async applyPlayerAction(
     id: string,
     playerName: string,
     whoMayAct: WhoMayAct,
-    action: RoundAction,
+    move: Move,
   ): Promise<MoveResponse> {
     const found = await this.store.findGame(id)
     const allowed = await found.filter(
@@ -241,7 +237,7 @@ export class ServerModel {
       async () => forbidden,
     )
     const acted = await allowed.flatMap(async (game) =>
-      applyToRound(game, seatOfPlayer(game, playerName), action),
+      applyToRound(game, move(seatOfPlayer(game, playerName))),
     )
     return acted.flatMap((game) => this.store.updateGame(game))
   }

@@ -1,8 +1,11 @@
-import { UnoRound, type RoundMemento } from '@domain/model/round.js'
+import type { Round } from '@domain/model/round.js'
+import { standardShuffler } from '@domain/utils/random_utils.js'
 import type { ActiveGame } from './serverModel.js'
 
-const seededGameMemento: RoundMemento = {
+const seededRound: Round = {
   players: ['Alice', 'Bob'],
+  playerCount: 2,
+  dealer: 1,
   hands: [
     [{ type: 'NUMBERED', color: 'RED', number: 5 }, { type: 'WILD' }],
     [
@@ -21,11 +24,13 @@ const seededGameMemento: RoundMemento = {
   ],
   discardPile: [{ type: 'NUMBERED', color: 'RED', number: 3 }],
   currentColor: 'RED',
-  currentDirection: 'clockwise',
-  dealer: 1,
+  direction: 1,
   playerInTurn: 0,
+  saidUno: [],
+  openToCatch: undefined,
+  shuffler: standardShuffler,
 }
 
 export function seededGame(id = '0'): ActiveGame {
-  return { id, pending: false, round: UnoRound.fromMemento(seededGameMemento) }
+  return { id, pending: false, round: seededRound }
 }

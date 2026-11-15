@@ -1,4 +1,4 @@
-import { CARD_COLORS } from '@domain/model/card.js'
+import { colors } from '@domain/model/deck.js'
 import * as z from 'zod'
 import { createGraphQLError } from './graphQLErrors.js'
 import { maxPlayers, minPlayers } from './serverModel.js'
@@ -8,7 +8,7 @@ export const GameIdArguments = z.object({ id: z.string().min(1) })
 export const PlayCardArguments = GameIdArguments.extend({
   cardIndex: z.number().int().nonnegative(),
   color: z
-    .enum(CARD_COLORS)
+    .enum(colors)
     .nullish()
     .transform((color) => color ?? undefined),
   sayUno: z.boolean(),
