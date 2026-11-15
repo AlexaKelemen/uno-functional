@@ -8,7 +8,7 @@
     "noEmit": true,
     "types": ["node"],
     "paths": {
-      "@domain/*": ["../domain/src/*"]
+      "@domain/*": ["../src/*"]
     }
   },
   "include": ["src"]
