@@ -13,6 +13,7 @@
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
+    "@types/lodash": "^4.17.27",
     "@types/node": "^26.6.5",
     "@types/ws": "^8.18.2",
     "prettier": "^3.9.10",
@@ -29,6 +30,7 @@
     "graphql": "^16.14.2",
     "graphql-subscriptions": "^3.0.0",
     "graphql-ws": "^6.4.0",
+    "lodash": "^4.18.1",
     "ws": "^8.22.0",
     "zod": "^4.6.7"
   }
