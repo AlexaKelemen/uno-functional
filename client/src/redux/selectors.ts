@@ -22,6 +22,16 @@ export type PlayerView = Readonly<{
   currentColor: Color
 }>
 
+export const selectCanPlayCard = (view: PlayerView | undefined, cardIndex: number): boolean => {
+  const card = view?.hand[cardIndex]
+  return (
+    view !== undefined &&
+    card !== undefined &&
+    view.playerInTurn === view.playerIndex &&
+    Round.canPlayCard(card, view.hand, view.topCard, view.currentColor)
+  )
+}
+
 // ---------- Session ----------
 
 export const selectPlayerName = (state: RootState) => state.session.playerName

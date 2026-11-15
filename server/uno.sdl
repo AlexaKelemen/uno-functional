@@ -1,0 +1,52 @@
+type Card {
+  type: String!
+  color: String
+  number: Int
+}
+
+type ActiveGame {
+  id: ID!
+  pending: Boolean!
+  players: [String!]!
+  playerInTurn: Int
+  hand: [Card!]
+  handSizes: [Int!]!
+  topCard: Card!
+  currentColor: String!
+  direction: String!
+  drawPileSize: Int!
+  winner: Int
+  score: Int
+}
+
+type PendingGame {
+  id: ID!
+  pending: Boolean!
+  creator: String!
+  players: [String!]!
+  numberOfPlayers: Int!
+}
+
+union Game = ActiveGame | PendingGame
+
+type Query {
+  game(id: ID!): ActiveGame
+  pendingGame(id: ID!): PendingGame
+  pendingGames: [PendingGame!]!
+}
+
+type Mutation {
+  playCard(id: ID!, cardIndex: Int!, color: String, sayUno: Boolean!): ActiveGame!
+  drawCard(id: ID!): ActiveGame!
+  sayUno(id: ID!): ActiveGame!
+  catchUnoFailure(id: ID!, accused: Int!): ActiveGame!
+  createGame(numberOfPlayers: Int!): PendingGame!
+  joinGame(id: ID!): Game!
+  leaveGame(id: ID!): ID!
+  startGame(id: ID!): ActiveGame!
+}
+
+type Subscription {
+  gameUpdated: ActiveGame
+  pendingGamesUpdated: [PendingGame!]!
+}

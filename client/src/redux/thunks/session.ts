@@ -1,6 +1,7 @@
 // Logging in opens the connection to the server; logging out closes it.
 // The name is kept in sessionStorage, so each browser tab can be a different
 // player and survives a reload.
+import { map } from 'rxjs'
 import type { AppThunk } from '../store'
 import { loggedIn, loggedOut } from '../slices/sessionSlice'
 import { gameReceived } from '../slices/onlineGamesSlice'
@@ -38,8 +39,8 @@ export const login =
     dispatch(loggedIn(trimmed))
     // Listen to the server, so lobby changes and opponents' moves show up.
     // Ends when the connection closes (logout or a new login).
-    const subscription = pendingGames$(server).subscribe((games) => void dispatch(receivePendingGames(games)))
-    subscription.add(gameUpdates$(server).subscribe((game) => dispatch(gameReceived(game))))
+    const subscription = pendingGames$(server).pipe(map(receivePendingGames)).subscribe(dispatch)
+    subscription.add(gameUpdates$(server).pipe(map(gameReceived)).subscribe(dispatch))
     connection.listen(subscription)
     void dispatch(refreshPendingGames())
   }
