@@ -59,19 +59,21 @@ export const hasEnded = (round: Round): boolean => winner(round) !== undefined
 export const score = (round: Round): number | undefined =>
   hasEnded(round) ? _.sumBy(points, _.flatten(round.hands)) : undefined
 
-const matchesTop = (card: Card, hand: Hand, round: Round): boolean => {
-  const top = topOfDiscard(round)
+export const canPlayCard = (card: Card, hand: Hand, topCard: Card, currentColor: Color): boolean => {
   switch (card.type) {
     case 'WILD':
       return true
     case 'WILD DRAW':
-      return !hand.some(hasColor(round.currentColor))
+      return !hand.some(hasColor(currentColor))
     case 'NUMBERED':
-      return hasColor(round.currentColor)(card) || (top.type === 'NUMBERED' && top.number === card.number)
+      return hasColor(currentColor)(card) || (topCard.type === 'NUMBERED' && topCard.number === card.number)
     default:
-      return hasColor(round.currentColor)(card) || top.type === card.type
+      return hasColor(currentColor)(card) || topCard.type === card.type
   }
 }
+
+const matchesTop = (card: Card, hand: Hand, round: Round): boolean =>
+  canPlayCard(card, hand, topOfDiscard(round), round.currentColor)
 
 const handInTurn = (round: Round): Hand =>
   round.playerInTurn === undefined ? [] : round.hands[round.playerInTurn]
