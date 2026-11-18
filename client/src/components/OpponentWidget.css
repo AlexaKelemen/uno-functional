@@ -1,0 +1,46 @@
+.opponentWidgetContainer{
+    min-width: 18rem;
+    display: flex;
+    flex-direction: column;
+    border-radius: 1rem;
+    border: 1px solid black;
+    padding: 20px;
+    align-self: center;
+    background: var(--background-tiles);
+    color: white;
+    font-weight: 700;
+    gap: 15px;
+}
+.opponentWidgetContainer.active{
+    border-color: var(--card-yellow);
+    box-shadow: 0 0 18px var(--card-yellow);
+}
+opponentWidgetContainer .cards{
+    display: flex;
+    min-height: 30px;
+}
+.opponentWidgetContainer .card + .card {
+    margin-left: -12px;      
+}
+.opponentWidgetContainer .card{
+    border: 2px solid white;
+    align-items: center;
+}
+.opponentWidgetContainer .ovalContainer{
+    font-size: 0.7rem;
+}
+.opponentInfo {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+.accuseBtn{
+  border-radius: 10px;
+  border: none;
+  background-color: var(--uno-logo-red);
+  color:white;
+  font-weight: 700;
+  padding: 0.5rem 0.5rem;
+  cursor: pointer;
+}

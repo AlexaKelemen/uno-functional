@@ -1,9 +1,15 @@
-// Placeholder until the React views are ported from the Vue client.
-// It only shows that the Redux store is wired in.
-import { useAppSelector } from './redux/hooks'
-import { selectPlayerName } from './redux/selectors'
+import { Routes, Route } from 'react-router'
+import SetupView from './views/SetupView'
+import LobbyView from './views/LobbyView'
+import GameView from './views/GameView'
 
 export default function App() {
-  const playerName = useAppSelector(selectPlayerName)
-  return <h1>UNO {playerName ? `– ${playerName}` : ''}</h1>
+  return (
+    <Routes>
+      <Route path="/" element={<SetupView />} />
+      <Route path="/lobby" element={<LobbyView />} />
+      <Route path="/game" element={<GameView />} />
+      <Route path="/game/:gameId" element={<GameView />} />
+    </Routes>
+  )
 }
