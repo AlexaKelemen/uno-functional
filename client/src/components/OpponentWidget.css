@@ -15,7 +15,7 @@
     border-color: var(--card-yellow);
     box-shadow: 0 0 18px var(--card-yellow);
 }
-opponentWidgetContainer .cards{
+.opponentWidgetContainer .cards{
     display: flex;
     min-height: 30px;
 }
