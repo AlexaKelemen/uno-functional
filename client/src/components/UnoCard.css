@@ -1,0 +1,57 @@
+.unoCard.red    { --card-color: var(--card-red); }
+.unoCard.blue   { --card-color: var(--card-blue); }
+.unoCard.green  { --card-color: var(--card-green); }
+.unoCard.yellow { --card-color: var(--card-yellow); }
+.unoCard.wild   { --card-color: var(--card-wildcard); }
+
+.unoCard.card {
+    isolation: isolate;
+    width: 10rem;
+    background: var(--card-color);
+    border: 5px solid white;
+    justify-content: space-between;
+    border-radius: 20px;
+    cursor: default;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+.unoCard.playable {
+    cursor: pointer;
+}
+.unoCard.playable:hover {
+    transform: translateY(-12px);
+    box-shadow: 0 0 18px var(--card-yellow);
+}
+.unoCard.disabled {
+    filter: brightness(0.5);
+}
+.unoCard .cardSymbolTopCorner {
+    font-size: 2rem;
+    font-weight: bold;
+    color: white;
+}
+.unoCard .cardSymbolBottomCorner {
+    font-size: 2rem;
+    font-weight: bold;
+    color: white;
+    align-self: flex-end;
+    transform: rotate(180deg);
+}
+.unoCard .cardSymbolMiddle {
+    font-size: 4.5rem;
+    font-weight: bold;
+    color: white;
+    transform: rotate(50deg);
+}
+.unoCard .ovalContainer {
+    background: var(--card-color);
+    border: 5px solid white;
+    align-self: center;
+}
+.unoCard .wildOvalContainer {
+    background: conic-gradient(
+        var(--card-red) 0 25%,
+        var(--card-blue) 0 50%,
+        var(--card-green) 0 75%,
+        var(--card-yellow) 0
+    );
+}

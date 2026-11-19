@@ -62,10 +62,44 @@ While a bot is in turn the runner waits `thinkMs` (2 s), asks the bot, and dispa
 
 For tests, `createLocalGameThunks({ createBot, thinkMs, random })` makes the same thunks with other bots (see `src/redux/__tests__/fakeBots.ts`).
 
-## React (todo)
+## React (done)
 
-Port the views and components from the Vue client. Read with `useAppSelector(selectX)` and act with `useAppDispatch()(thunkOrAction)`. `App.tsx` is only a placeholder.
+The views and components are ported from the Vue client. They read with `useAppSelector(selectX)` and act with `useAppDispatch()(thunkOrAction)`; none of them holds game state of its own.
 
-- A game against bots: `selectLocalView`, `selectIsHumansTurn`, `selectBotsThinking`, `selectLocalWinner`, `selectLastAccusation`, `selectLocalError`, and the thunks above. To say UNO without playing, dispatch `saidUno(HUMAN)`.
-- An online game: `selectOnlineView(state, id)`, `selectOnlineWinner`, `selectOnlineError` and `thunks/onlineGame.ts`.
-- Either game: `selectCanPlayCard(view, cardIndex)` to grey out cards.
+### Routing
+
+`react-router`, set up in `App.tsx`:
+
+| Path | View |
+| --- | --- |
+| `/` | `SetupView`: name, then a game against 1-3 bots, or create/join an online lobby |
+| `/lobby` | `LobbyView`: the lobby we wait in. The host starts the game |
+| `/game` | `GameView` for the local game against bots |
+| `/game/:gameId` | `GameView` for an online game |
+
+### Views (`src/views`)
+
+| File | Uses |
+| --- | --- |
+| `SetupView.tsx` | `login`, `startLocalGame`, `createGame`, `joinGame`, `selectLobbyError`. Goes to `/lobby` once `lobby.waitingForId` is set |
+| `LobbyView.tsx` | `selectWaitingIn`, `selectStartedGameId`, `leaveGame`, `startGameNow`. Goes to `/game/:id` once the game starts, and clears `waitingForId` with `stoppedWaiting` |
+| `GameView.tsx` | `useGameSource`, `selectCanPlayCard`. Keeps only UI state: the UNO toggle, the wild card waiting for a color, the last accusation message |
+
+`src/hooks/useGameSource.ts` makes one `GameView` serve both kinds of game. It reads `gameId` from the URL and returns the same `{ view, mySeat, isMyTurn, winner, waitingText, error, play, draw, accuse, endLocalGame }` for both: without an id it uses t
+he local selectors and thunks, with one the online ones (and loads the game with `loadGame`).
+
+### Components (`src/components`)
+
+Only props and callbacks, no Redux:
+
+| Component | Props |
+| --- | --- |
+| `UnoCard` | `card`, `playable?`, `isTopCard?`, `onPlay?` |
+| `DrawPile` | `isTurn`, `onDraw` |
+| `UnoButton` | `sayUnoActive`, `isTurn`, `onToggle` |
+| `OpponentWidget` | `name`, `handSize`, `isTurn`, `canAccuse?`, `onAccuse` |
+| `ColorWheelWidget` | `currentColor?`, `selectable?`, `onSelectColor?` |
+
+### CSS
+
+`assets/main.css` (imported in `main.tsx`) has the colours as CSS variables, the page background and the base `.card` and `.ovalContainer` shapes that all cards share. Each component and view has its own `.css` file. Plain CSS is global, unlike Vue's `scoped`, so every rule that uses a shared name is nested under the component's root class (`.unoCard .ovalContainer`, `.topBarLobby .quitButton`, ...).
