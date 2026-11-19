@@ -35,7 +35,6 @@ The client talks to `http://localhost:4000/graphql` unless `VITE_GAME_SERVER_URL
 
 ## Todo
 
-- The React views and components (`client/src`): only `App.tsx` is a placeholder. See `client/README.md` for what they can use.
 - The model does not enforce that only the drawn card may be played after a draw that keeps the turn. The bot runner enforces it for the bots; a human, locally or online, may play any matching card.
 
 # The functional model (assignment 4)
