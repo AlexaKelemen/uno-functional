@@ -1,4 +1,4 @@
-# UNO, functional (WEB3 assignments 4, 5 and 6)
+# UNO, functional (WEB3 assignments 4 and 5)
 
 UNO rules as immutable data and pure functions, using `lodash/fp` (assignment 4), with a GraphQL server and a React/Redux/RxJS client built on them (assignment 5).
 
@@ -7,7 +7,6 @@ UNO rules as immutable data and pure functions, using `lodash/fp` (assignment 4)
 | `src/model` | The functional model: `deck.ts`, `round.ts`, `uno.ts` | jest, `__test__/` |
 | `server` | GraphQL server (Apollo, graphql-ws). Games are functional `Round`s | vitest |
 | `client` | React + Redux + RxJS client. Local games against bots run the model in the browser | vitest |
-| `next-client` | Assignment 6: the client ported to Next.js, with SSR. See `next-client/README.md` | |
 
 The server and the client both import the model from `src`, so all three use the same code.
 
